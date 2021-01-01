@@ -30,7 +30,9 @@ class UserController extends Controller
     {
         $arr_rules['first_name']          = "required|string|max:255";
         $arr_rules['last_name']          = "required|string|max:255";
+        $arr_rules['birth_of_date']          = "required|string|max:255";
         $arr_rules['email']         = "required|string|max:255|email|";
+        $arr_rules['mobile']         = "required|string|max:255";
         $arr_rules['password']      = "required|string|min:6";
         $arr_rules['confirm_password'] = "required|string|min:6|same:password";
         $validator = Validator::make($request->all(), $arr_rules);
@@ -47,13 +49,53 @@ class UserController extends Controller
                 $user->first_name = $request->input('first_name');
                 $user->last_name = $request->input('last_name');
                 $user->email = $request->input('email');
+                $user->mobile = $request->input('mobile');
                 $user->password = Hash::make($request->input('password'));
+                $user->birth_of_date = $request->input('birth_of_date');
                 $user->api_token = Str::random(60);
-                $user->racername = $request->input('racername');
+                $user->username = $request->input('username');
                 $user->zipcode = $request->input('zipcode');
                 $user->save();
                 return response()->json(['success' => true,'data'=>$user,'message'=>'User Registration Successfully'], 200);
             }
+        }
+    }
+
+    /* forgot password */
+    public function forgot(Request $request)
+    {
+        $para = $request->input('input');
+        $UserCount = User::where('email',$para)->count();
+        if($UserCount > 0)
+        {
+            $user = User::where('email',$para)->first();
+            return response()->json(['success' => true,'data'=>$user,'message'=>'Otp Sent Successfully'], 200);
+            die;
+        }
+        $UserCount = User::where('mobile',$para)->count();
+        if($UserCount > 0)
+        {
+            $user = User::where('mobile',$para)->first();
+            return response()->json(['success' => true,'data'=>$user,'message'=>'Otp Sent Successfully'], 200);
+            die;
+        }
+        return response()->json(['success'=>false,'data'=>array(),'message'=>'User Not Found'], 401);
+    }
+
+    /* reset password */
+    public function reset(Request $request)
+    {
+        $arr_rules['password']      = "required|string|min:6";
+        $arr_rules['confirm_password'] = "required|string|min:6|same:password";
+        $validator = Validator::make($request->all(), $arr_rules);
+        if ($validator->fails())
+        {
+            return response()->json(['success'=>false,'data'=>array(),'message'=>'password and confirm password not matched'], 401);
+        }else{
+            $user = User::where('id',$request->input('id'))->first();
+            $user->password = Hash::make($request->input('password'));
+            $user->save();
+            return response()->json(['success' => true,'data'=>$user,'message'=>'User Password Reset Successfully'], 200);
         }
     }
 

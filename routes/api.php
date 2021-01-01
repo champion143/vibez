@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 */
 Route::post('login', [App\Http\Controllers\API\UserController::class, 'login']);
 Route::post('register', [App\Http\Controllers\API\UserController::class, 'register']);
+Route::post('forgot', [App\Http\Controllers\API\UserController::class, 'forgot']);
+Route::post('reset', [App\Http\Controllers\API\UserController::class, 'reset']);
 
 Route::middleware(['ApiUserCheck'])->group(function () {
     Route::post('profile',[App\Http\Controllers\API\ProfileController::class, 'index']);
