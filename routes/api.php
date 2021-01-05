@@ -24,7 +24,6 @@ Route::middleware(['ApiUserCheck'])->group(function () {
     Route::get('user/followerList',[App\Http\Controllers\API\ProfileController::class, 'followerList']);
     Route::get('user/followingList',[App\Http\Controllers\API\ProfileController::class, 'followingList']);
     Route::post('user/reportUser',[App\Http\Controllers\API\ProfileController::class, 'reportUser']);
-
     //article
     Route::post('user/article',[App\Http\Controllers\API\ArticleController::class, 'articleList']);
     Route::post('user/article/create',[App\Http\Controllers\API\ArticleController::class, 'createArticle']);

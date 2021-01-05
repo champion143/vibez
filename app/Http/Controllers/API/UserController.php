@@ -46,7 +46,6 @@ class UserController extends Controller
                 $user = new User;
                 $user->name = $request->input('name');
                 $user->email = $request->input('email');
-                // $user->mobile = $request->input('mobile');
                 $user->password = Hash::make($request->input('password'));
                 $user->birth_of_date = $request->input('birth_of_date');
                 $user->api_token = Str::random(60);
