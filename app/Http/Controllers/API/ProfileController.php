@@ -54,19 +54,12 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $userDetail = array();
-        $userDetail['first_name'] = $request->input('first_name');
-        $userDetail['last_name'] = $request->input('last_name');
-        $userDetail['racername'] = $request->input('racername');
+        $userDetail['name'] = $request->input('name');
+        $userDetail['username'] = $request->input('username');
         $userDetail['zipcode'] = $request->input('zipcode');
         User::where('id',$this->userId)->update($userDetail);
         $userData = User::where('id',$this->userId)->first();
         return response()->json(['success'=>true,'data'=>$userData,'message'=>'User Profile Updated successfully'], 200);
-    }
-
-    public function getCarDetail(Request $request,$id)
-    {
-        $Car = Car::where('id',$id)->first();
-        return response()->json(['success'=>true,'data'=>$Car,'message'=>'Item Registered successfully'], 200);
     }
 
     // do follow and un follow

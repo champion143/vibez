@@ -27,11 +27,10 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-        $arr_rules['first_name']          = "required|string|max:255";
-        $arr_rules['last_name']          = "required|string|max:255";
+        $arr_rules['name']          = "required|string|max:255";
         $arr_rules['birth_of_date']          = "required|string|max:255";
         $arr_rules['email']         = "required|string|max:255|email|";
-        $arr_rules['mobile']         = "required|string|max:255";
+        // $arr_rules['mobile']         = "required|string|max:255";
         $arr_rules['password']      = "required|string|min:6";
         $arr_rules['confirm_password'] = "required|string|min:6|same:password";
         $validator = Validator::make($request->all(), $arr_rules);
@@ -45,10 +44,9 @@ class UserController extends Controller
                 return response()->json(['success'=>false,'data'=>array(),'message'=>'user already exist'], 401);
             }else{
                 $user = new User;
-                $user->first_name = $request->input('first_name');
-                $user->last_name = $request->input('last_name');
+                $user->name = $request->input('name');
                 $user->email = $request->input('email');
-                $user->mobile = $request->input('mobile');
+                // $user->mobile = $request->input('mobile');
                 $user->password = Hash::make($request->input('password'));
                 $user->birth_of_date = $request->input('birth_of_date');
                 $user->api_token = Str::random(60);
