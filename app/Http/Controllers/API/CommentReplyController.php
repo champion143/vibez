@@ -9,7 +9,7 @@ use App\ReplyLikes;
 use App\ArticleCommentReplyReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\DB;
 
 class CommentReplyController extends Controller
 {
@@ -174,6 +174,31 @@ class CommentReplyController extends Controller
                     $data['message']="We are facing some issue we will get back to you soon";
                     $data['data']=null;
                 }
+        }
+        return response()->json($data);
+    }
+
+    // comment reply delete
+    public function articleCommentReplyDelete(Request $request)
+    {
+        $userId = $this->userId;
+        $validator = Validator::make($request->all(), [
+            'commentReplyId' => 'required'
+        ]);
+        if ($validator->fails())
+        {
+            $data['code']=0;
+            $data['message']='Some data is missing';
+            $data['data']=null;
+        }
+        else
+        {
+            DB::table('comment_reply')
+            ->where('article_id', $request->commentReplyId)
+            ->update(array('is_deleted' => 1,'comment_deleted_date'=>date('Y-m-d H:i:s'),'comment_deleted_by'=>$userId));
+            $data['code']=1;
+            $data['message']='Article Comment Reply Deleted Successfully';
+            $data['data']=null;
         }
         return response()->json($data);
     }

@@ -128,5 +128,22 @@ class ProfileController extends Controller
         }
     }
 
+    // change password
+    public function changePassword(Request $request)
+    {
+        $arr_rules['password']      = "required|string|min:6";
+        $arr_rules['confirm_password'] = "required|string|min:6|same:password";
+        $validator = Validator::make($request->all(), $arr_rules);
+        if ($validator->fails())
+        {
+            return response()->json(['success'=>false,'data'=>array(),'message'=>'password and confirm password not matched'], 401);
+        }else{
+            $user = User::where('id',$this->userId)->first();
+            $user->password = Hash::make($request->input('password'));
+            $user->save();
+            return response()->json(['success' => true,'data'=>$user,'message'=>'User Password Changed Successfully'], 200);
+        }
+    }
+
 
 }

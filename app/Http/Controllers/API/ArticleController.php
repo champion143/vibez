@@ -107,25 +107,9 @@ class ArticleController extends Controller
     {
         $userId = $this->userId;
         $forumId = 0;
-        // if($forumId==0)
-        // {
-        //     $articleList= Article::where([['article.forum_id','=',$forumId],['article.is_active','=',1],['article.created_from','=',2]])
-        //         ->leftJoin('admin','article.created_by','=','admin.id')
-        //         ->select('admin.id as user_id','admin.first_name','admin.last_name','admin.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
-        //         ->orderBy('article.created_at', 'DESC')
-        //         ->paginate(10);
-        // }
-        // else
-        // {
-        //     $articleList= Article::where([['article.forum_id','=',$forumId],['article.is_active','=',1],['article.created_from','=',1]])
-        //         ->leftJoin('users','article.created_by','=','users.id')
-        //         ->select('users.id as user_id','users.first_name','users.last_name','users.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
-        //         ->orderBy('article.created_at', 'DESC')
-        //         ->paginate(10);
-        // }
-        $articleList= Article::where([['article.forum_id','=',$forumId],['article.is_active','=',1]])
+        $articleList= Article::where([['article.forum_id','=',$forumId],['article.created_by','=',$userId],['article.is_active','=',1]])
                 ->leftJoin('users','article.created_by','=','users.id')
-                ->select('users.id as user_id','users.first_name','users.last_name','users.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
+                ->select('users.id as user_id','users.name','users.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
                 ->orderBy('article.created_at', 'DESC')
                 ->paginate(10);
         if(count($articleList)==0)
@@ -201,7 +185,7 @@ class ArticleController extends Controller
                     'forumId' => $article->forum_id,
                     'articleId' => $article->article_id,
                     'articleUserId' =>$article->user_id,
-                    'postedBy' => $article->first_name." ".$article->last_name,
+                    'postedBy' => $article->name,
                     'userImage' => $getUserImage,
                     'postedDate' => $article->created_at,
                     'articleTitle' => $article->article_title,
@@ -242,15 +226,11 @@ class ArticleController extends Controller
     {
         $header = $request->header('Authorization');
         $userId = $request->header('userId');
-
         $validator = Validator::make($request->all(), [
             'articleTitle' => 'required'
         ]);
-
-
         if ($validator->fails())
         {
-
             $data['code']=0;
             $data['message']='Some data is missing';
             $data['data']=null;
@@ -261,7 +241,7 @@ class ArticleController extends Controller
             {
                 $articleList= Article::where([['article.forum_id','=',$forumId],['article.is_active','=',1],['article.created_from','=',2],['article.article_title', 'like', '%'.$request->articleTitle.'%']])
                 ->leftJoin('admin','article.created_by','=','admin.id')
-                ->select('admin.id as user_id','admin.first_name','admin.last_name','admin.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
+                ->select('admin.id as user_id','admin.name','admin.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
                 ->orderBy('article.created_at', 'DESC')
                 ->paginate(10);
             }
@@ -269,11 +249,10 @@ class ArticleController extends Controller
             {
                 $articleList= Article::where([['article.forum_id','=',$forumId],['article.is_active','=',1],['article.created_from','=',1],['article.article_title', 'like', '%'.$request->articleTitle.'%']])
                     ->leftJoin('users','article.created_by','=','users.id')
-                    ->select('users.id as user_id','users.first_name','users.last_name','users.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
+                    ->select('users.id as user_id','users.name','users.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
                     ->orderBy('article.created_at', 'DESC')
                     ->paginate(10);
             }
-
             if(count($articleList)==0)
             {
                 $data['code']=1;
@@ -282,129 +261,115 @@ class ArticleController extends Controller
             }
             else
             {
-            $articleUserList = array();
-
-            foreach ($articleList as $article)
-            {
-
-                $articleCommentCount=Comment::where([['article_id','=',$article->article_id],['is_deleted','=',0]])->count();
-                $commentReplycount=CommentReply::where([['article_id','=',$article->article_id],['is_deleted','=',0]])->count();
-                $commentCount=($articleCommentCount+$commentReplycount);
-
-
-                $getUserImage=null;
-                if (!(empty($article->user_profile_images_url)))
+                $articleUserList = array();
+                foreach ($articleList as $article)
                 {
-                    $getUserImage=$article->user_profile_images_url;
-                    $getUserImage=url($getUserImage);
-                    $getUserImage=str_replace('index.php/', '', $getUserImage);
-                }else
-                {
-                     $getUserImage='upload/images/appicon.png';
-                    $getUserImage=url($getUserImage);
-                    $getUserImage=str_replace('index.php/', '', $getUserImage);
-                }
 
-                $articleMediaId=null;
-                $articleMediaType=null;
-                $articleMediaURL=null;
-                $imageWidth=null;
-                $imageHeight=null;
+                    $articleCommentCount=Comment::where([['article_id','=',$article->article_id],['is_deleted','=',0]])->count();
+                    $commentReplycount=CommentReply::where([['article_id','=',$article->article_id],['is_deleted','=',0]])->count();
+                    $commentCount=($articleCommentCount+$commentReplycount);
 
-                $articleMedia=ArticleMedia::where([['article_id','=',$article->article_id]])->get();
-                if(count($articleMedia)!=0)
-                {
-                     $articleMediaType=$articleMedia[0]->media_type;
-                     $articleMediaId=$articleMedia[0]->id;
 
-                    if($articleMedia[0]->media_type==1)
+                    $getUserImage=null;
+                    if (!(empty($article->user_profile_images_url)))
                     {
-
-                        $getArticleImage=$articleMedia[0]->media_url;
-                        $getArticleImage=url($getArticleImage);
-                        $getArticleImage=str_replace('index.php/', '', $getArticleImage);
-
-                        $articleMediaURL=$getArticleImage;
-                        $imageWidth=$articleMedia[0]->width;
-                        $imageHeight=$articleMedia[0]->height;
-                    }
-                    else
+                        $getUserImage=$article->user_profile_images_url;
+                        $getUserImage=url($getUserImage);
+                        $getUserImage=str_replace('index.php/', '', $getUserImage);
+                    }else
                     {
-                        $articleMediaURL=$articleMedia[0]->media_url;
+                        $getUserImage='upload/images/appicon.png';
+                        $getUserImage=url($getUserImage);
+                        $getUserImage=str_replace('index.php/', '', $getUserImage);
                     }
+
+                    $articleMediaId=null;
+                    $articleMediaType=null;
+                    $articleMediaURL=null;
+                    $imageWidth=null;
+                    $imageHeight=null;
+
+                    $articleMedia=ArticleMedia::where([['article_id','=',$article->article_id]])->get();
+                    if(count($articleMedia)!=0)
+                    {
+                        $articleMediaType=$articleMedia[0]->media_type;
+                        $articleMediaId=$articleMedia[0]->id;
+
+                        if($articleMedia[0]->media_type==1)
+                        {
+
+                            $getArticleImage=$articleMedia[0]->media_url;
+                            $getArticleImage=url($getArticleImage);
+                            $getArticleImage=str_replace('index.php/', '', $getArticleImage);
+
+                            $articleMediaURL=$getArticleImage;
+                            $imageWidth=$articleMedia[0]->width;
+                            $imageHeight=$articleMedia[0]->height;
+                        }
+                        else
+                        {
+                            $articleMediaURL=$articleMedia[0]->media_url;
+                        }
+                    }
+
+
+
+
+                    $userArticleLike=ArticleLikes::where([['article_id','=',$article->article_id],['like_by','=',$userId]])->get();
+                    $isArticleLikeSelected=0;
+                    if(count($userArticleLike)!=0)
+                    {
+                        $isArticleLikeSelected=1;
+                    }
+
+
+                    $bookmarkData=Bookmark::where([['article_id','=',$article->article_id],['bookmark_by','=',$userId]])->get();
+                    $isBookmarked=0;
+                    if(count($bookmarkData)!=0)
+                    {
+                        $isBookmarked=1;
+                    }
+
+                    $articleUserList[]=array(
+                        'type'=>$article->type,
+                        'isAnonymous'=>$article->is_anonymous,
+                        'forumId' => $article->forum_id,
+                        'articleId' => $article->article_id,
+                        'articleUserId' =>$article->user_id,
+                        'postedBy' => $article->name,
+                        'userImage' => $getUserImage,
+                        'postedDate' => $article->created_at,
+                        'articleTitle' => $article->article_title,
+                        'articleMediaId' => $articleMediaId,
+                        'articleMediaType' => $articleMediaType,
+                        'articleMediaURL' => $articleMediaURL,
+                        'imageWidth' => $imageWidth,
+                        'imageHeight' => $imageHeight,
+                        'noOfLikes' => $article->likes,
+                        'isLikeSelected' => $isArticleLikeSelected,
+                        'noOfComments' => $commentCount,
+                        'isBookmarked' => $isBookmarked
+                        );
                 }
-
-
-
-
-                $userArticleLike=ArticleLikes::where([['article_id','=',$article->article_id],['like_by','=',$userId]])->get();
-                $isArticleLikeSelected=0;
-                if(count($userArticleLike)!=0)
-                {
-                    $isArticleLikeSelected=1;
-                }
-
-
-                $bookmarkData=Bookmark::where([['article_id','=',$article->article_id],['bookmark_by','=',$userId]])->get();
-                $isBookmarked=0;
-                if(count($bookmarkData)!=0)
-                {
-                    $isBookmarked=1;
-                }
-
-                $articleUserList[]=array(
-                    'type'=>$article->type,
-                    'isAnonymous'=>$article->is_anonymous,
-                    'forumId' => $article->forum_id,
-                    'articleId' => $article->article_id,
-                    'articleUserId' =>$article->user_id,
-                    'postedBy' => $article->first_name." ".$article->last_name,
-                    'userImage' => $getUserImage,
-                    'postedDate' => $article->created_at,
-                    'articleTitle' => $article->article_title,
-                    'articleMediaId' => $articleMediaId,
-                    'articleMediaType' => $articleMediaType,
-                    'articleMediaURL' => $articleMediaURL,
-                    'imageWidth' => $imageWidth,
-                    'imageHeight' => $imageHeight,
-                    'noOfLikes' => $article->likes,
-                    'isLikeSelected' => $isArticleLikeSelected,
-                    'noOfComments' => $commentCount,
-                    'isBookmarked' => $isBookmarked
-                    );
-            }
-
-            $data['code']=1;
-            $data['message']=null;
-            $data['data']['current_page']=$articleList->currentPage();
-            $data['data']['per_page']=$articleList->perPage();
-            $data['data']['total']=$articleList->total();
-            $data['data']['next_page_url']=$articleList->nextPageUrl();
-            $data['data']['prev_page_url']=$articleList->previousPageUrl();
-            $data['data']['articleList']=$articleUserList;
+                $data['code']=1;
+                $data['message']=null;
+                $data['data']['current_page']=$articleList->currentPage();
+                $data['data']['per_page']=$articleList->perPage();
+                $data['data']['total']=$articleList->total();
+                $data['data']['next_page_url']=$articleList->nextPageUrl();
+                $data['data']['prev_page_url']=$articleList->previousPageUrl();
+                $data['data']['articleList']=$articleUserList;
             }
 
         }
-
         return response()->json($data);
     }
 
     public function articleDetail(Request $request,$articleId,$forumId=0)
     {
         $userId = $this->userId;
-        // if($forumId==0)
-        // {
-        //     $articleDetail= Article::where([['id','=',$articleId],['is_active','=',1],['created_from','=',2]])->get();
-        //     $userArticlePostDetail=DB::table('admin')->select('id','first_name','last_name','user_profile_images_url')->where([['id','=',$articleDetail[0]->created_by]])->get();
-        // }
-        // else
-        // {
-        //     $articleDetail= Article::where([['id','=',$articleId],['forum_id','=',$forumId],['is_active','=',1],['created_from','=',1]])->get();
-        //     $userArticlePostDetail=User::select('id','first_name','last_name','user_profile_images_url')->where([['id','=',$articleDetail[0]->created_by]])->get();
-        // }
         $articleDetail= Article::where([['id','=',$articleId],['forum_id','=',$forumId],['is_active','=',1]])->get();
-        $userArticlePostDetail=User::select('id','first_name','last_name','user_profile_images_url')->where([['id','=',$articleDetail[0]->created_by]])->get();
-
+        $userArticlePostDetail=User::select('id','name','user_profile_images_url')->where([['id','=',$articleDetail[0]->created_by]])->get();
         if(count($articleDetail)==0)
         {
             $data['code']=1;
@@ -413,200 +378,172 @@ class ArticleController extends Controller
         }
         else
         {
-
-        $updateArticle= Article::find($articleId);
-        $updateArticle->no_of_views = ($articleDetail[0]->no_of_views + 1);
-        $updateArticle->save();
-
-
-        $articleMedia=ArticleMedia::where([['article_id','=',$articleId]])->get();
-
-
-        $userArticleLike=ArticleLikes::where([['article_id','=',$articleId],['like_by','=',$userId]])->get();
-        $isArticleLikeSelected=0;
-        if(count($userArticleLike)!=0)
-        {
-            $isArticleLikeSelected=1;
-        }
-
-        $userArticleReport=ArticleReport::where([['article_id','=',$articleId],['reported_by','=',$userId]])->get();
-        $isArticleReportSelected=0;
-        if(count($userArticleReport)!=0)
-        {
-            $isArticleReportSelected=1;
-        }
-
-        $articleCommentCount=Comment::where([['article_id','=',$articleId],['is_deleted','=',0]])->count();
-        $commentReplycount=CommentReply::where([['article_id','=',$articleId],['is_deleted','=',0]])->count();
-        $commentCount=($articleCommentCount+$commentReplycount);
-
-        $getUserImage=null;
-        if (!(empty($userArticlePostDetail[0]->user_profile_images_url)))
-        {
-            $getUserImage=$userArticlePostDetail[0]->user_profile_images_url;
-            $getUserImage=url($getUserImage);
-            $getUserImage=str_replace('index.php/', '', $getUserImage);
-        }else
-        {
-             $getUserImage='upload/images/appicon.png';
-            $getUserImage=url($getUserImage);
-            $getUserImage=str_replace('index.php/', '', $getUserImage);
-        }
-
-        $bookmarkData=Bookmark::where([['article_id','=',$articleId],['bookmark_by','=',$userId]])->get();
-        $isBookmarked=0;
-        if(count($bookmarkData)!=0)
-        {
-            $isBookmarked=1;
-        }
-
-        $article = array();
-        $comments=array();
-
-        $article['articleUserId'] = $userArticlePostDetail[0]->id;
-        $article['postedBy']=$userArticlePostDetail[0]->first_name." ".$userArticlePostDetail[0]->last_name;
-        $article['userImage']=$getUserImage;
-        $article['postedDate']=$articleDetail[0]->created_at;
-        $article['type']=$articleDetail[0]->type;
-        $article['isAnonymous']=$articleDetail[0]->is_anonymous;
-        $article['articleId']=(int) $articleId;
-        $article['articleTitle']=$articleDetail[0]->article_title;
-        $article['forumId']=$articleDetail[0]->forum_id;
-        $article['articleDescription']=$articleDetail[0]->article_description;
-
-        $articleMediaId=null;
-        $articleMediaType=null;
-        $articleMediaURL=null;
-        $imageWidth=null;
-        $imageHeight=null;
-
-        if(count($articleMedia)!=0)
-        {
-            $articleMediaId=$articleMedia[0]->id;
-            $articleMediaType=$articleMedia[0]->media_type;
-             if($articleMedia[0]->media_type==1)
-             {
-
-                $getArticleImage=$articleMedia[0]->media_url;
-                $getArticleImage=url($getArticleImage);
-                $getArticleImage=str_replace('index.php/', '', $getArticleImage);
-                $articleMediaURL=$getArticleImage;
-                $imageWidth=$articleMedia[0]->width;
-                $imageHeight=$articleMedia[0]->height;
-             }
-             else
-             {
-                $articleMediaURL=$articleMedia[0]->media_url;
-             }
-        }
-
-        $article['articleMediaId']=$articleMediaId;
-        $article['articleMediaType']=$articleMediaType;
-        $article['articleMediaURL']=$articleMediaURL;
-        $article['imageWidth']=$imageWidth;
-        $article['imageHeight']=$imageHeight;
-        $article['noOfLikes']=$articleDetail[0]->likes;
-        $article['noOfComments']=$commentCount;
-        $article['isBookmarked']=$isBookmarked;
-        $article['isLikeSelected']=$isArticleLikeSelected;
-        $article['isReportSelected']=$isArticleReportSelected;
-
-        $commentsList = Article::find($articleId)->comments()->where('is_deleted','=',0)->orderBy('comment_date', 'DESC')->get();
-
-        foreach ($commentsList as $comment)
-        {
-            $replies=array();
-            $userDetail=User::select('id','first_name','last_name','user_profile_images_url')->where([['id','=',$comment->comment_by]])->get();
-
-            $userCommentLike=CommentLikes::where([['comment_id','=',$comment->id],['article_id','=',$articleId],['like_by','=',$userId]])->get();
-            $isCommentLikeSelected=0;
-            if(count($userCommentLike)!=0)
+            $updateArticle= Article::find($articleId);
+            $updateArticle->no_of_views = ($articleDetail[0]->no_of_views + 1);
+            $updateArticle->save();
+            $articleMedia=ArticleMedia::where([['article_id','=',$articleId]])->get();
+            $userArticleLike=ArticleLikes::where([['article_id','=',$articleId],['like_by','=',$userId]])->get();
+            $isArticleLikeSelected=0;
+            if(count($userArticleLike)!=0)
             {
-                $isCommentLikeSelected=1;
+                $isArticleLikeSelected=1;
             }
-
-            $userCommentReport=ArticleCommentReport::where([['comment_id','=',$comment->id],['article_id','=',$articleId],['reported_by','=',$userId]])->get();
-            $isCommentReportSelected=0;
-            if(count($userCommentReport)!=0)
+            $userArticleReport=ArticleReport::where([['article_id','=',$articleId],['reported_by','=',$userId]])->get();
+            $isArticleReportSelected=0;
+            if(count($userArticleReport)!=0)
             {
-                $isCommentReportSelected=1;
+                $isArticleReportSelected=1;
             }
-
-            $getCommentUserImage=null;
-            if (!(empty($userDetail[0]->user_profile_images_url)))
+            $articleCommentCount=Comment::where([['article_id','=',$articleId],['is_deleted','=',0]])->count();
+            $commentReplycount=CommentReply::where([['article_id','=',$articleId],['is_deleted','=',0]])->count();
+            $commentCount=($articleCommentCount+$commentReplycount);
+            $getUserImage=null;
+            if (!(empty($userArticlePostDetail[0]->user_profile_images_url)))
             {
-                $getCommentUserImage=$userDetail[0]->user_profile_images_url;
-                $getCommentUserImage=url($getCommentUserImage);
-                $getCommentUserImage=str_replace('index.php/', '', $getCommentUserImage);
+                $getUserImage=$userArticlePostDetail[0]->user_profile_images_url;
+                $getUserImage=url($getUserImage);
+                $getUserImage=str_replace('index.php/', '', $getUserImage);
+            }else
+            {
+                $getUserImage='upload/images/appicon.png';
+                $getUserImage=url($getUserImage);
+                $getUserImage=str_replace('index.php/', '', $getUserImage);
             }
-
-            $commentsReplyList = Comment::find($comment->id)->commentsReplies()->where('is_deleted','=',0)->orderBy('comment_date', 'ASC')->get();
-
-            foreach ($commentsReplyList as $commentReply) {
-
-                $userReplyDetail=User::select('id','first_name','last_name','user_profile_images_url')->where([['id','=',$commentReply->comment_by]])->get();
-
-                $userReplyLike=ReplyLikes::where([['reply_id','=',$commentReply->id],['comment_id','=',$comment->id],['article_id','=',$articleId],['like_by','=',$userId]])->get();
-                $isReplyLikeSelected=0;
-                if(count($userReplyLike)!=0)
+            $bookmarkData=Bookmark::where([['article_id','=',$articleId],['bookmark_by','=',$userId]])->get();
+            $isBookmarked=0;
+            if(count($bookmarkData)!=0)
+            {
+                $isBookmarked=1;
+            }
+            $article = array();
+            $comments=array();
+            $article['articleUserId'] = $userArticlePostDetail[0]->id;
+            $article['postedBy']=$userArticlePostDetail[0]->name;
+            $article['userImage']=$getUserImage;
+            $article['postedDate']=$articleDetail[0]->created_at;
+            $article['type']=$articleDetail[0]->type;
+            $article['isAnonymous']=$articleDetail[0]->is_anonymous;
+            $article['articleId']=(int) $articleId;
+            $article['articleTitle']=$articleDetail[0]->article_title;
+            $article['forumId']=$articleDetail[0]->forum_id;
+            $article['articleDescription']=$articleDetail[0]->article_description;
+            $articleMediaId=null;
+            $articleMediaType=null;
+            $articleMediaURL=null;
+            $imageWidth=null;
+            $imageHeight=null;
+            if(count($articleMedia)!=0)
+            {
+                $articleMediaId=$articleMedia[0]->id;
+                $articleMediaType=$articleMedia[0]->media_type;
+                if($articleMedia[0]->media_type==1)
                 {
-                    $isReplyLikeSelected=1;
-                }
 
-                $userReplyReport=ArticleCommentReplyReport::where([['reply_id','=',$commentReply->id],['comment_id','=',$comment->id],['article_id','=',$articleId],['reported_by','=',$userId]])->get();
-                $isReplyReportSelected=0;
-                if(count($userReplyReport)!=0)
+                    $getArticleImage=$articleMedia[0]->media_url;
+                    $getArticleImage=url($getArticleImage);
+                    $getArticleImage=str_replace('index.php/', '', $getArticleImage);
+                    $articleMediaURL=$getArticleImage;
+                    $imageWidth=$articleMedia[0]->width;
+                    $imageHeight=$articleMedia[0]->height;
+                }
+                else
                 {
-                    $isReplyReportSelected=1;
+                    $articleMediaURL=$articleMedia[0]->media_url;
                 }
-
-                $getCommentReplyUserImage=null;
-                if (!(empty($userReplyDetail[0]->user_profile_images_url)))
+            }
+            $article['articleMediaId']=$articleMediaId;
+            $article['articleMediaType']=$articleMediaType;
+            $article['articleMediaURL']=$articleMediaURL;
+            $article['imageWidth']=$imageWidth;
+            $article['imageHeight']=$imageHeight;
+            $article['noOfLikes']=$articleDetail[0]->likes;
+            $article['noOfComments']=$commentCount;
+            $article['isBookmarked']=$isBookmarked;
+            $article['isLikeSelected']=$isArticleLikeSelected;
+            $article['isReportSelected']=$isArticleReportSelected;
+            $commentsList = Article::find($articleId)->comments()->where('is_deleted','=',0)->orderBy('comment_date', 'DESC')->get();
+            foreach ($commentsList as $comment)
+            {
+                $replies=array();
+                $userDetail=User::select('id','name','user_profile_images_url')->where([['id','=',$comment->comment_by]])->get();
+                $userCommentLike=CommentLikes::where([['comment_id','=',$comment->id],['article_id','=',$articleId],['like_by','=',$userId]])->get();
+                $isCommentLikeSelected=0;
+                if(count($userCommentLike)!=0)
                 {
-                    $getCommentReplyUserImage=$userReplyDetail[0]->user_profile_images_url;
-                    $getCommentReplyUserImage=url($getCommentReplyUserImage);
-                    $getCommentReplyUserImage=str_replace('index.php/', '', $getCommentReplyUserImage);
+                    $isCommentLikeSelected=1;
                 }
+                $userCommentReport=ArticleCommentReport::where([['comment_id','=',$comment->id],['article_id','=',$articleId],['reported_by','=',$userId]])->get();
+                $isCommentReportSelected=0;
+                if(count($userCommentReport)!=0)
+                {
+                    $isCommentReportSelected=1;
+                }
+                $getCommentUserImage=null;
+                if (!(empty($userDetail[0]->user_profile_images_url)))
+                {
+                    $getCommentUserImage=$userDetail[0]->user_profile_images_url;
+                    $getCommentUserImage=url($getCommentUserImage);
+                    $getCommentUserImage=str_replace('index.php/', '', $getCommentUserImage);
+                }
+                $commentsReplyList = Comment::find($comment->id)->commentsReplies()->where('is_deleted','=',0)->orderBy('comment_date', 'ASC')->get();
+                foreach ($commentsReplyList as $commentReply) {
 
-                $replies[]=array(
-                'replyUserId'=>$userReplyDetail[0]->id,
-                'replyUserName'=>$userReplyDetail[0]->first_name." ".$userReplyDetail[0]->last_name,
-                'replyUserImage'=>$getCommentReplyUserImage,
-                'replyId'=>$commentReply->id,
-                'parentCommentId'=>$commentReply->comment_id,
-                'userReply'=>$commentReply->comment,
-                'replyNoOfLikes'=>$commentReply->likes,
-                'isLikeSelected'=>$isReplyLikeSelected,
-                'isReportSelected'=>$isReplyReportSelected
+                    $userReplyDetail=User::select('id','name','user_profile_images_url')->where([['id','=',$commentReply->comment_by]])->get();
+
+                    $userReplyLike=ReplyLikes::where([['reply_id','=',$commentReply->id],['comment_id','=',$comment->id],['article_id','=',$articleId],['like_by','=',$userId]])->get();
+                    $isReplyLikeSelected=0;
+                    if(count($userReplyLike)!=0)
+                    {
+                        $isReplyLikeSelected=1;
+                    }
+
+                    $userReplyReport=ArticleCommentReplyReport::where([['reply_id','=',$commentReply->id],['comment_id','=',$comment->id],['article_id','=',$articleId],['reported_by','=',$userId]])->get();
+                    $isReplyReportSelected=0;
+                    if(count($userReplyReport)!=0)
+                    {
+                        $isReplyReportSelected=1;
+                    }
+
+                    $getCommentReplyUserImage=null;
+                    if (!(empty($userReplyDetail[0]->user_profile_images_url)))
+                    {
+                        $getCommentReplyUserImage=$userReplyDetail[0]->user_profile_images_url;
+                        $getCommentReplyUserImage=url($getCommentReplyUserImage);
+                        $getCommentReplyUserImage=str_replace('index.php/', '', $getCommentReplyUserImage);
+                    }
+
+                    $replies[]=array(
+                        'replyUserId'=>$userReplyDetail[0]->id,
+                        'replyUserName'=>$userReplyDetail[0]->name,
+                        'replyUserImage'=>$getCommentReplyUserImage,
+                        'replyId'=>$commentReply->id,
+                        'parentCommentId'=>$commentReply->comment_id,
+                        'userReply'=>$commentReply->comment,
+                        'replyNoOfLikes'=>$commentReply->likes,
+                        'isLikeSelected'=>$isReplyLikeSelected,
+                        'isReportSelected'=>$isReplyReportSelected
+                    );
+                }
+                $commentReplycount=CommentReply::where([['comment_id','=',$comment->id],['is_deleted','=',0]])->count();
+                $comments[]=array(
+                    'commentUserId'=>$userDetail[0]->id,
+                    'commentUserName'=>$userDetail[0]->name,
+                    'commentUserImage'=>$getCommentUserImage,
+                    'parentCommentId'=>$comment->id,
+                    'userComment'=>$comment->comment,
+                    'noOfLikes'=>$comment->likes,
+                    'noOfReply'=>$commentReplycount,
+                    'isLikeSelected'=>$isCommentLikeSelected,
+                    'isReportSelected'=>$isCommentReportSelected,
+                    'replies'=>$replies
                 );
             }
-
-
-            $commentReplycount=CommentReply::where([['comment_id','=',$comment->id],['is_deleted','=',0]])->count();
-
-            $comments[]=array(
-                'commentUserId'=>$userDetail[0]->id,
-                'commentUserName'=>$userDetail[0]->first_name." ".$userDetail[0]->last_name,
-                'commentUserImage'=>$getCommentUserImage,
-                'parentCommentId'=>$comment->id,
-                'userComment'=>$comment->comment,
-                'noOfLikes'=>$comment->likes,
-                'noOfReply'=>$commentReplycount,
-                'isLikeSelected'=>$isCommentLikeSelected,
-                'isReportSelected'=>$isCommentReportSelected,
-                'replies'=>$replies
-                );
+            $data['code']=1;
+            $data['message']=null;
+            $data['data']['article']=$article;
+            $data['data']['comments']=$comments;
         }
-
-        $data['code']=1;
-        $data['message']=null;
-        $data['data']['article']=$article;
-        $data['data']['comments']=$comments;
-
-
-        }
-         return response()->json($data);
-
+        return response()->json($data);
     }
 
     public function articleEditDetail(Request $request,$forumId,$articleId)
@@ -637,20 +574,19 @@ class ArticleController extends Controller
             {
                 $articleMediaId=$articleMedia[0]->id;
                 $articleMediaType=$articleMedia[0]->media_type;
-                 if($articleMedia[0]->media_type==1)
-                 {
-
+                if($articleMedia[0]->media_type==1)
+                {
                     $getArticleImage=$articleMedia[0]->media_url;
                     $getArticleImage=url($getArticleImage);
                     $getArticleImage=str_replace('index.php/', '', $getArticleImage);
                     $articleMediaURL=$getArticleImage;
                     $imageWidth=$articleMedia[0]->width;
                     $imageHeight=$articleMedia[0]->height;
-                 }
-                 else
-                 {
+                }
+                else
+                {
                     $articleMediaURL=$articleMedia[0]->media_url;
-                 }
+                }
             }
             $article['articleMediaId']=$articleMediaId;
             $article['articleMediaType']=$articleMediaType;
@@ -662,7 +598,6 @@ class ArticleController extends Controller
             $data['message']=null;
             $data['data']['article']=$article;
         }
-
         return response()->json($data);
     }
 

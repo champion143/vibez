@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Http\Request;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -20,11 +19,13 @@ Route::post('reset', [App\Http\Controllers\API\UserController::class, 'reset']);
 Route::middleware(['ApiUserCheck'])->group(function () {
     Route::post('profile',[App\Http\Controllers\API\ProfileController::class, 'index']);
     Route::post('profile/update',[App\Http\Controllers\API\ProfileController::class, 'update']);
+    Route::post('profile/changePassword',[App\Http\Controllers\API\ProfileController::class, 'changePassword']);
     Route::post('user/followandunfollow',[App\Http\Controllers\API\ProfileController::class, 'followStatusChange']);
     Route::get('user/followerList',[App\Http\Controllers\API\ProfileController::class, 'followerList']);
     Route::get('user/followingList',[App\Http\Controllers\API\ProfileController::class, 'followingList']);
     Route::post('user/reportUser',[App\Http\Controllers\API\ProfileController::class, 'reportUser']);
-    //article
+
+    // article
     Route::post('user/article',[App\Http\Controllers\API\ArticleController::class, 'articleList']);
     Route::post('user/article/create',[App\Http\Controllers\API\ArticleController::class, 'createArticle']);
     Route::post('user/article/update',[App\Http\Controllers\API\ArticleController::class, 'articleUpdate']);
@@ -37,13 +38,12 @@ Route::middleware(['ApiUserCheck'])->group(function () {
     Route::post('user/article/comment',[App\Http\Controllers\API\CommentController::class, 'storeComment']);
     Route::post('user/article/comment/like',[App\Http\Controllers\API\CommentController::class, 'likeComment']);
     Route::post('user/article/comment/report',[App\Http\Controllers\API\CommentController::class, 'reportComment']);
+    Route::post('user/article/comment/delete',[App\Http\Controllers\API\CommentController::class, 'articleCommentDelete']);
 
     // Replies
     Route::post('user/article/comment/reply',[App\Http\Controllers\API\CommentReplyController::class, 'storeReplies']);
     Route::post('user/article/comment/reply/like',[App\Http\Controllers\API\CommentReplyController::class, 'likeReplies']);
-
-
-
+    Route::post('user/article/comment/reply/delete',[App\Http\Controllers\API\CommentReplyController::class, 'articleCommentReplyDelete']);
 });
 
 // Route::middleware('auth:api')->get('/user', function (Request $request) {

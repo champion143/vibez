@@ -9,6 +9,7 @@ use App\CommentLikes;
 use App\ArticleCommentReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class CommentController extends Controller
 {
@@ -160,6 +161,31 @@ class CommentController extends Controller
             }
         }
 
+        return response()->json($data);
+    }
+
+    // comment delete
+    public function articleCommentDelete(Request $request)
+    {
+        $userId = $this->userId;
+        $validator = Validator::make($request->all(), [
+            'commentId' => 'required'
+        ]);
+        if ($validator->fails())
+        {
+            $data['code']=0;
+            $data['message']='Some data is missing';
+            $data['data']=null;
+        }
+        else
+        {
+            DB::table('article_comments')
+            ->where('article_id', $request->commentId)
+            ->update(array('is_deleted' => 1,'comment_deleted_date'=>date('Y-m-d H:i:s'),'comment_deleted_by'=>$userId));
+            $data['code']=1;
+            $data['message']='Article Comment Deleted Successfully';
+            $data['data']=null;
+        }
         return response()->json($data);
     }
 
