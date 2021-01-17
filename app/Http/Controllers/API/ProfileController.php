@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Car;
+use App\Flag;
 use App\Follow;
 use App\Http\Controllers\Controller;
 use App\User;
@@ -57,6 +58,8 @@ class ProfileController extends Controller
         $userDetail['name'] = $request->input('name');
         $userDetail['username'] = $request->input('username');
         $userDetail['zipcode'] = $request->input('zipcode');
+        $userDetail['boi'] = $request->input('boi','');
+        $userDetail['flag'] = $request->input('flag','');
         User::where('id',$this->userId)->update($userDetail);
         $userData = User::where('id',$this->userId)->first();
         return response()->json(['success'=>true,'data'=>$userData,'message'=>'User Profile Updated successfully'], 200);
@@ -114,7 +117,7 @@ class ProfileController extends Controller
     {
         $reciever_id = $request->input('reciever_id');
         $report_id = $request->input('report_id');
-        $count = UserReport::where('user_id',$this->userId)->where('reciever_id',$reciever_id)->count();
+        $count = UserReport::where('user_id',$this->userId)->where('report_id',$report_id)->where('reciever_id',$reciever_id)->count();
         if($count > 0)
         {
             return response()->json(['success'=>false,'data'=>array(),'message'=>"User Already Reported this account"], 200);
@@ -145,5 +148,77 @@ class ProfileController extends Controller
         }
     }
 
+    // recommended user list
+    public function recommendedUserList(Request $request)
+    {
+        $name = $request->input('name',"");
+        $users = User::where('name','like','%'.$name.'%')->where('id','!=',$this->userId)->get();
+        foreach($users as $user)
+        {
+            $is_follow = 0;
+            $following_id = $user->id;
+            $follower_id = $this->userId;
+            $follow = Follow::where('following_id',$following_id)->where('follower_id',$follower_id)->first();
+            if(isset($follow->id))
+            {
+                $is_follow = 1;
+            }
+            $user->is_follow = $is_follow;
+            if($user->image != "")
+            {
+                $user->image = url('images').'/'.$user->image;
+            }
+        }
+        return response()->json(
+            [
+                'success'=>true,
+                'data'=>$users,
+                'message'=>'User List Get successfully'
+            ], 200);
+    }
+
+    // get all flags
+    public function getAllFlags(Request $request)
+    {
+        $name = $request->input('name',"");
+        $flags = Flag::where('countryname','like','%'.$name.'%')->get();
+        foreach($flags as $flag)
+        {
+            $filename = strtoupper($flag->code).'.png';
+            $flag->flag_image = url('flags').'/'.$filename;
+        }
+        return response()->json(
+            [
+                'success'=>true,
+                'data'=>$flags,
+                'message'=>'All Flags Get successfully'
+            ], 200);
+    }
+
+    // change account type
+    public function changeAccountType()
+    {
+        $user = User::where('id',$this->userId)->first();
+        $account_type = $user->account_type;
+        if($account_type == 1)
+        {
+            $message = 'Account Public successfully';
+            $account_type = 0;
+        }else{
+            $account_type = 1;
+            $message = 'Account Private successfully';
+        }
+        User::where('id',$this->userId)->update(
+            array(
+                'account_type' => $account_type
+            )
+        );
+        return response()->json(
+            [
+                'success'=>true,
+                'data'=>array(),
+                'message'=>$message
+            ], 200);
+    }
 
 }

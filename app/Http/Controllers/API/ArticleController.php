@@ -102,7 +102,118 @@ class ArticleController extends Controller
         return response()->json($data);
     }
 
+    /* recommended articles */
+    public function allArticleList(Request $request)
+    {
+        $userId = $this->userId;
+        $forumId = 0;
+        $articleList= Article::where([['article.forum_id','=',$forumId],['article.is_active','=',1]])
+                ->leftJoin('users','article.created_by','=','users.id')
+                ->select('users.id as user_id','users.name','users.user_profile_images_url','article.id as article_id','article.forum_id','article.type','article.is_anonymous','article.article_title','article.created_at','article.likes')
+                ->orderBy('article.created_at', 'DESC')
+                ->paginate(10);
+        if(count($articleList)==0)
+        {
+            $data['code']=1;
+            $data['message']='No Post Found';
+            $data['data']['articleList']=[];
+        }
+        else
+        {
+            $articleUserList = array();
+            foreach ($articleList as $article)
+            {
+                $articleCommentCount=Comment::where([['article_id','=',$article->article_id],['is_deleted','=',0]])->count();
+                $commentReplycount=CommentReply::where([['article_id','=',$article->article_id],['is_deleted','=',0]])->count();
+                $commentCount=($articleCommentCount+$commentReplycount);
+                $getUserImage=null;
+                if (!(empty($article->user_profile_images_url)))
+                {
+                    $getUserImage=$article->user_profile_images_url;
+                    $getUserImage=url($getUserImage);
+                    $getUserImage=str_replace('index.php/', '', $getUserImage);
+                }else
+                {
+                    $getUserImage='upload/images/appicon.png';
+                    $getUserImage=url($getUserImage);
+                    $getUserImage=str_replace('index.php/', '', $getUserImage);
+                }
 
+                $articleMediaId=null;
+                $articleMediaType=null;
+                $articleMediaURL=null;
+                $imageWidth=null;
+                $imageHeight=null;
+
+                $articleMedia=ArticleMedia::where([['article_id','=',$article->article_id]])->get();
+                if(count($articleMedia)!=0)
+                {
+                     $articleMediaType=$articleMedia[0]->media_type;
+                     $articleMediaId=$articleMedia[0]->id;
+
+                    if($articleMedia[0]->media_type==1)
+                    {
+
+                        $getArticleImage=$articleMedia[0]->media_url;
+                        $getArticleImage=url($getArticleImage);
+                        $getArticleImage=str_replace('index.php/', '', $getArticleImage);
+
+                        $articleMediaURL=$getArticleImage;
+                        $imageWidth=$articleMedia[0]->width;
+                        $imageHeight=$articleMedia[0]->height;
+                    }
+                    else
+                    {
+                        $articleMediaURL=$articleMedia[0]->media_url;
+                    }
+                }
+                $userArticleLike=ArticleLikes::where([['article_id','=',$article->article_id],['like_by','=',$userId]])->get();
+                $isArticleLikeSelected=0;
+                if(count($userArticleLike)!=0)
+                {
+                    $isArticleLikeSelected=1;
+                }
+                $bookmarkData=Bookmark::where([['article_id','=',$article->article_id],['bookmark_by','=',$userId]])->get();
+                $isBookmarked=0;
+                if(count($bookmarkData)!=0)
+                {
+                    $isBookmarked=1;
+                }
+                $articleUserList[]=array(
+                    'type'=>$article->type,
+                    'isAnonymous'=>$article->is_anonymous,
+                    'forumId' => $article->forum_id,
+                    'articleId' => $article->article_id,
+                    'articleUserId' =>$article->user_id,
+                    'postedBy' => $article->name,
+                    'userImage' => $getUserImage,
+                    'postedDate' => $article->created_at,
+                    'articleTitle' => $article->article_title,
+                    'articleMediaId' => $articleMediaId,
+                    'articleMediaType' => $articleMediaType,
+                    'articleMediaURL' => $articleMediaURL,
+                    'imageWidth' => $imageWidth,
+                    'imageHeight' => $imageHeight,
+                    'noOfLikes' => $article->likes,
+                    'isLikeSelected' => $isArticleLikeSelected,
+                    'noOfComments' => $commentCount,
+                    'isBookmarked' => $isBookmarked
+                );
+            }
+
+            $data['code']=1;
+            $data['message']=null;
+            $data['data']['current_page']=$articleList->currentPage();
+            $data['data']['per_page']=$articleList->perPage();
+            $data['data']['total']=$articleList->total();
+            $data['data']['next_page_url']=$articleList->nextPageUrl();
+            $data['data']['prev_page_url']=$articleList->previousPageUrl();
+            $data['data']['articleList']=$articleUserList;
+        }
+
+        return response()->json($data);
+    }
+    /* my article */
     public function articleList(Request $request)
     {
         $userId = $this->userId;

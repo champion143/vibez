@@ -26,6 +26,8 @@ Route::middleware(['ApiUserCheck'])->group(function () {
     Route::post('user/reportUser',[App\Http\Controllers\API\ProfileController::class, 'reportUser']);
 
     // article
+    Route::post('user/allarticle',[App\Http\Controllers\API\ArticleController::class, 'allArticleList']);
+
     Route::post('user/article',[App\Http\Controllers\API\ArticleController::class, 'articleList']);
     Route::post('user/article/create',[App\Http\Controllers\API\ArticleController::class, 'createArticle']);
     Route::post('user/article/update',[App\Http\Controllers\API\ArticleController::class, 'articleUpdate']);
@@ -44,6 +46,22 @@ Route::middleware(['ApiUserCheck'])->group(function () {
     Route::post('user/article/comment/reply',[App\Http\Controllers\API\CommentReplyController::class, 'storeReplies']);
     Route::post('user/article/comment/reply/like',[App\Http\Controllers\API\CommentReplyController::class, 'likeReplies']);
     Route::post('user/article/comment/reply/delete',[App\Http\Controllers\API\CommentReplyController::class, 'articleCommentReplyDelete']);
+
+    // chat api
+    Route::get('user/chat/getChatTag',[App\Http\Controllers\API\ChatController::class, 'getChatTag']);
+    Route::post('user/chat/sendMessage',[App\Http\Controllers\API\ChatController::class, 'sendMessage']);
+    Route::post('user/chat/sendBulkMessage',[App\Http\Controllers\API\ChatController::class, 'sendBulkMessage']);
+    Route::post('user/chat/getMessage',[App\Http\Controllers\API\ChatController::class, 'getMessage']);
+
+    // recommended user
+    Route::post('user/recommendedUserList',[App\Http\Controllers\API\ProfileController::class, 'recommendedUserList']);
+
+    // get flag list
+    Route::post('user/getAllFlags',[App\Http\Controllers\API\ProfileController::class, 'getAllFlags']);
+
+    // account type change
+    Route::get('user/changeAccountType',[App\Http\Controllers\API\ProfileController::class, 'changeAccountType']);
+
 });
 
 // Route::middleware('auth:api')->get('/user', function (Request $request) {

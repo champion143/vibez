@@ -24,8 +24,11 @@ class CreateUsersTable extends Migration
             $table->text('username')->nullable();
             $table->text('zipcode')->nullable();
             // $table->text('mobile')->nullable();
+            $table->integer('account_type')->default(0);
             $table->text('api_token')->nullable();
             $table->text('device_token')->nullable();
+            $table->longtext('boi')->nullable();
+            $table->integer('flag')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });
