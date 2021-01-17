@@ -55,7 +55,7 @@ class CommentController extends Controller
                 'comment_date' => date('Y-m-d H:i:s')
             ]);
             $commentDetails= Comment::where([['id','=',$comment->id]])->get();
-            $userDetail=User::select('id','first_name','last_name','user_profile_images_url')->where([['id','=',$userId]])->get();
+            $userDetail=User::select('id','name','user_profile_images_url')->where([['id','=',$userId]])->get();
             $getCommentUserImage=null;
             if (!(empty($userDetail[0]->user_profile_images_url)))
             {
@@ -66,7 +66,7 @@ class CommentController extends Controller
             $data['code']=1;
             $data['message']=null;
             $data['data']['commentUserId']=$userDetail[0]->id;
-            $data['data']['commentUserName']=$userDetail[0]->first_name." ".$userDetail[0]->last_name;
+            $data['data']['commentUserName']=$userDetail[0]->name;
             $data['data']['commentUserImage']=$getCommentUserImage;
             $data['data']['parentCommentId']=$commentDetails[0]->id;
             $data['data']['userComment']=$commentDetails[0]->comment;

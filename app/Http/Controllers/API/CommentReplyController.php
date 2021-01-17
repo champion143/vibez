@@ -57,7 +57,7 @@ class CommentReplyController extends Controller
                 'comment_date' => date('Y-m-d H:i:s')
             ]);
             $replyDetails= CommentReply::where([['id','=',$commentReply->id]])->get();
-            $userReplyDetail=User::select('id','first_name','last_name','user_profile_images_url')->where([['id','=',$userId]])->get();
+            $userReplyDetail=User::select('id','name','user_profile_images_url')->where([['id','=',$userId]])->get();
             $getCommentReplyUserImage=null;
             if (!(empty($userReplyDetail[0]->user_profile_images_url)))
             {
@@ -68,7 +68,7 @@ class CommentReplyController extends Controller
             $data['code']=1;
             $data['message']=null;
             $data['data']['replyUserId']=$userReplyDetail[0]->id;
-            $data['data']['replyUserName']=$userReplyDetail[0]->first_name." ".$userReplyDetail[0]->last_name;
+            $data['data']['replyUserName']=$userReplyDetail[0]->name;
             $data['data']['replyUserImage']=$getCommentReplyUserImage;
             $data['data']['replyId']=$replyDetails[0]->id;
             $data['data']['parentCommentId']=$replyDetails[0]->comment_id;
